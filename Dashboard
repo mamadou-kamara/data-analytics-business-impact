@@ -1,0 +1,83 @@
+Total Profit = SUM(fact_missions_performance[Profit])
+
+Total Revenue = SUM(fact_missions_performance[Revenue_Impact])
+
+Total Cost = SUM(fact_missions_performance[Cost])
+
+ROI = DIVIDE([Total Profit], [Total Cost], 0)
+
+Success Rate = 
+DIVIDE(
+    CALCULATE(COUNTROWS(fact_missions_performance),
+        fact_missions_performance[Completion_Status] = "Completed"
+    ),
+    COUNTROWS(fact_missions_performance),
+    0
+)
+
+Avg Success Score = 
+AVERAGE(fact_missions_performance[Success_Score])
+
+Avg Profit per Mission = 
+DIVIDE([Total Profit], COUNTROWS(fact_missions_performance))
+
+ROI per Platform = 
+CALCULATE([ROI], ALLEXCEPT(dim_platforms, dim_platforms[Platform_Name]))
+
+Weighted Impact = 
+SUMX(
+    fact_missions_performance,
+    fact_missions_performance[Success_Score] * fact_missions_performance[Revenue_Impact]
+)
+
+Unprofitable Missions = 
+CALCULATE(
+    COUNTROWS(fact_missions_performance),
+    fact_missions_performance[Profit] < 0
+)
+
+--- Taux de missions à perte
+Loss Rate = 
+DIVIDE(
+    [Unprofitable Missions],
+    COUNTROWS(fact_missions_performance)
+)
+
+Monthly Profit = 
+CALCULATE(
+    [Total Profit],
+    VALUES(dim_date[Month])
+)
+
+MoM Growth = 
+VAR CurrentMonth = [Total Profit]
+VAR PreviousMonth =
+    CALCULATE(
+        [Total Profit],
+        PREVIOUSMONTH(dim_date[Date])
+    )
+RETURN
+DIVIDE(CurrentMonth - PreviousMonth, PreviousMonth)
+
+Impact by Complexity = 
+CALCULATE(
+    [Total Profit],
+    ALLEXCEPT(dim_missions, dim_missions[Complexity])
+)
+
+Efficiency by Experience = 
+CALCULATE(
+    [Success Rate],
+    ALLEXCEPT(dim_volunteers, dim_volunteers[Experience_Level])
+)
+
+High Complexity ROI = 
+CALCULATE(
+    [ROI],
+    dim_missions[Complexity] = "High"
+)
+
+Performance Score = 
+([Success Rate] * 0.4) +
+([ROI] * 0.4) +
+([Avg Success Score] / 100 * 0.2)
